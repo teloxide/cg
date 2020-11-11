@@ -8,8 +8,7 @@ pub fn cur_commit() -> String {
         .current_dir(dir)
         .args(&["add", "-N", dir])
         .status()
-        .expect("Failed to run `git add -N <path>`")
-        .apply(|status| assert!(status.success()));
+        .expect("Failed to run `git add -N <path>`");
 
     let commit = std::process::Command::new("git")
         .current_dir(dir)
@@ -30,7 +29,7 @@ pub fn cur_commit() -> String {
         == 1
         || std::process::Command::new("git")
             .current_dir(dir)
-            .args(&["diff", "staged", "--quiet", "--exit-code"])
+            .args(&["diff", "--staged", "--quiet", "--exit-code"])
             .status()
             .expect("Failed to read last commit")
             .code()
