@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, ops::Deref, collections::HashSet, fmt::Display};
+use std::{borrow::Borrow, collections::HashSet, ops::Deref};
 
 use itertools::Itertools;
 use kiam::when;
@@ -135,9 +135,22 @@ fn render_doc(doc: &crate::schema::Doc, sibling: Option<&str>) -> String {
         }
     };
 
-    let sibling_note = sibling.map(|s| format!("\n    /// \n    /// See also: [`{s}`](crate::payloads::{s})", s=s)).unwrap_or_default();
+    let sibling_note = sibling
+        .map(|s| {
+            format!(
+                "\n    /// \n    /// See also: [`{s}`](crate::payloads::{s})",
+                s = s
+            )
+        })
+        .unwrap_or_default();
 
-    ["    /// ", &doc.md.replace("\n", "\n    /// "), &sibling_note, &links].concat()
+    [
+        "    /// ",
+        &doc.md.replace("\n", "\n    /// "),
+        &sibling_note,
+        &links,
+    ]
+    .concat()
 }
 
 fn eq_hash_suitable(method: &crate::schema::Method) -> bool {
@@ -171,7 +184,9 @@ fn params(params: impl Iterator<Item = impl Borrow<crate::schema::Param>>) -> St
             let field = &param.name;
             let ty = &param.ty;
             let flatten = match ty {
-                crate::schema::Type::RawTy(s) if s == "InputSticker" || s == "TargetMessage" => "\n            #[serde(flatten)]",
+                crate::schema::Type::RawTy(s) if s == "InputSticker" || s == "TargetMessage" => {
+                    "\n            #[serde(flatten)]"
+                }
                 _ => "",
             };
             let convert = convert_for(ty);

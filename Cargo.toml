@@ -13,4 +13,3 @@ once_cell = "1.4"
 kiam = { git = "https://github.com/WaffleLapkin/kiam.git", rev = "f341628" }
 itertools = "0.9"
 fntools = { git = "https://github.com/WaffleLapkin/fntools.git", rev = "dedeb6a" }
-regex = "1.4"

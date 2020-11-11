@@ -4,8 +4,8 @@ mod patch;
 mod schema;
 
 fn main() {
-    let schema_path ="../tg-methods-schema/schema.ron";
-        //std::env::var("SC_PATH").expect("Expected `SC_PATH` variable set (path to schema)");
+    let schema_path =
+        std::env::var("SC_PATH").expect("Expected `SC_PATH` variable set (path to schema)");
 
     let schema = schema::Schema::load(&schema_path);
     let schema = patch::patch_sc(schema);
@@ -36,8 +36,7 @@ fn payloads_main(schema: schema::Schema, payloads_path: &str) {
         content.extend_from_slice(header.as_bytes());
         content.extend_from_slice(payload.content.as_bytes());
 
-        file.write_all(&content)
-            .expect("Write failed");
+        file.write_all(&content).expect("Write failed");
 
         content.clear();
     }
