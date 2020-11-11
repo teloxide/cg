@@ -66,7 +66,7 @@ impl Payload {
 impl_payload! {{
 {method_doc}
     #[derive(Debug, PartialEq,{eq_hash_derive} Clone, Deserialize, Serialize)]
-    pub struct {Method} ({Method}Setters) => {return_ty} {{
+    pub {Method} ({Method}Setters) => {return_ty} {{
 {required}{optional}
     }}
 }}
