@@ -65,7 +65,7 @@ impl Payload {
 
 impl_payload! {{
 {method_doc}
-    #[derive(Debug, PartialEq,{eq_hash_derive} Clone, Deserialize, Serialize)]
+    #[derive(Debug, PartialEq,{eq_hash_derive} Clone, Serialize)]
     pub {Method} ({Method}Setters) => {return_ty} {{
 {required}{optional}
     }}
@@ -88,8 +88,8 @@ impl_payload! {{
 fn uses(method: &crate::schema::Method) -> String {
     fn ty_use(ty: &crate::schema::Type) -> Option<String> {
         match ty {
-            crate::schema::Type::True
-            | crate::schema::Type::u8
+            crate::schema::Type::True => Some(String::from("use crate::types::True;\n")),
+            crate::schema::Type::u8
             | crate::schema::Type::u16
             | crate::schema::Type::u32
             | crate::schema::Type::u64
@@ -110,13 +110,13 @@ fn uses(method: &crate::schema::Method) -> String {
         .collect::<HashSet<_>>();
 
     when! {
-        uses.is_empty() => String::from("use serde::{Serialize, Deserialize};"),
+        uses.is_empty() => String::from("use serde::Serialize;"),
         _ => {
             let uses = uses
                 .into_iter()
                 .join("");
 
-            format!("use serde::{{Serialize, Deserialize}};\n\n{uses}", uses = uses)
+            format!("use serde::Serialize;\n\n{uses}", uses = uses)
         }
     }
 }
@@ -168,8 +168,8 @@ fn eq_hash_suitable(method: &crate::schema::Method) -> bool {
             | crate::schema::Type::u64
             | crate::schema::Type::i64
             | crate::schema::Type::bool
-            | crate::schema::Type::String
-            | crate::schema::Type::RawTy(_) => true,
+            | crate::schema::Type::String => true,
+            crate::schema::Type::RawTy(raw) => raw != "MaskPosition" && raw != "InlineQueryResult",
         }
     }
 

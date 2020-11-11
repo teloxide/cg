@@ -6,6 +6,8 @@ pub fn patch_sc(mut schema: Schema) -> Schema {
     }
 
     schema.methods.iter_mut().for_each(|method| {
+        method.params.iter_mut().map(|p| &mut p.name).for_each(escape_kw);
+        
         DOC_PATCHES.iter().for_each(|(key, patch)| match key {
             Target::Method(m) => {
                 if check(m, &method.names.0) {
@@ -149,5 +151,11 @@ fn intra_links(doc: &mut crate::schema::Doc) {
                 .replace(format!("[{}]", repl).as_str(), &format!("[`{}`]", repl));
             doc.md_links.insert(format!("`{}`", repl), value);
         }
+    }
+}
+
+fn escape_kw(s: &mut String) {
+    if ["type"].contains(&s.as_str()) {
+        *s = format!("r#{}", s);
     }
 }
