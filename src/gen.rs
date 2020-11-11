@@ -3,6 +3,8 @@ use std::{borrow::Borrow, collections::HashSet, ops::Deref};
 use itertools::Itertools;
 use kiam::when;
 
+use crate::to_uppercase;
+
 pub struct Payload {
     pub file_name: String,
     pub content: String,
@@ -139,7 +141,7 @@ fn render_doc(doc: &crate::schema::Doc, sibling: Option<&str>) -> String {
         .map(|s| {
             format!(
                 "\n    /// \n    /// See also: [`{s}`](crate::payloads::{s})",
-                s = s
+                s = to_uppercase(s)
             )
         })
         .unwrap_or_default();

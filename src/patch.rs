@@ -1,4 +1,4 @@
-use crate::schema::Schema;
+use crate::{schema::Schema, to_uppercase};
 
 pub fn patch_sc(mut schema: Schema) -> Schema {
     fn check(l: &Option<&str>, r: &str) -> bool {
@@ -6,8 +6,12 @@ pub fn patch_sc(mut schema: Schema) -> Schema {
     }
 
     schema.methods.iter_mut().for_each(|method| {
-        method.params.iter_mut().map(|p| &mut p.name).for_each(escape_kw);
-        
+        method
+            .params
+            .iter_mut()
+            .map(|p| &mut p.name)
+            .for_each(escape_kw);
+
         DOC_PATCHES.iter().for_each(|(key, patch)| match key {
             Target::Method(m) => {
                 if check(m, &method.names.0) {
@@ -48,6 +52,76 @@ static DOC_PATCHES: &[(Target, Patch)] = &[
         Patch::ReplaceLink {
             name: "More info on Sending Files »",
             value: "crate::types::InputFile",
+        },
+    ),
+    (
+        Target::Field {
+            method_name: Some("sendChatAction"),
+            field_name: Some("action"),
+        },
+        Patch::ReplaceLink {
+            name: "text messages",
+            value: "crate::payloads::SendMessage",
+        },
+    ),
+    (
+        Target::Field {
+            method_name: Some("sendChatAction"),
+            field_name: Some("action"),
+        },
+        Patch::ReplaceLink {
+            name: "photos",
+            value: "crate::payloads::SendPhoto",
+        },
+    ),
+    (
+        Target::Field {
+            method_name: Some("sendChatAction"),
+            field_name: Some("action"),
+        },
+        Patch::ReplaceLink {
+            name: "videos",
+            value: "crate::payloads::SendVideo",
+        },
+    ),
+    (
+        Target::Field {
+            method_name: Some("sendChatAction"),
+            field_name: Some("action"),
+        },
+        Patch::ReplaceLink {
+            name: "audio files",
+            value: "crate::payloads::SendAudio",
+        },
+    ),
+    (
+        Target::Field {
+            method_name: Some("sendChatAction"),
+            field_name: Some("action"),
+        },
+        Patch::ReplaceLink {
+            name: "general files",
+            value: "crate::payloads::SendDocument",
+        },
+    ),
+    (
+        Target::Field {
+            method_name: Some("sendChatAction"),
+            field_name: Some("action"),
+        },
+        Patch::ReplaceLink {
+            name: "location data",
+            value: "crate::payloads::SendLocation",
+        },
+    ),
+    (
+        Target::Field {
+            method_name: Some("sendChatAction"),
+            field_name: Some("action"),
+        },
+        Patch::ReplaceLink {
+            name: "video notes",
+            value: "crate::payloads::SendVideoNote",
         },
     ),
     (
@@ -139,8 +213,9 @@ fn intra_links(doc: &mut crate::schema::Doc) {
         .for_each(|(k, v)| {
             if let Some(c) = k.chars().next() {
                 kiam::when! {
+                    k == "games" => {},
                     k == "unbanned" => *v = String::from("crate::payloads::UnbanChatMember"),
-                    c.is_lowercase() && !["update", "games", "videos", "photos"].contains(&&&**k) => {
+                    c.is_lowercase() && !["update"].contains(&&&**k) => {
                         repls_m.push(k.clone());
                         *v = format!("crate::payloads::{}", to_uppercase(k));
                     },
@@ -163,22 +238,17 @@ fn intra_links(doc: &mut crate::schema::Doc) {
 
     for repl in repls_m {
         if let Some(value) = doc.md_links.remove(repl.as_str()) {
-            let repl = to_uppercase(&repl);
+            let repln = to_uppercase(&repl);
             doc.md = doc
                 .md
-                .replace(format!("[{}]", repl).as_str(), &format!("[`{}`]", repl));
-            doc.md_links.insert(format!("`{}`", repl), value);
+                .replace(format!("[{}]", repl).as_str(), &format!("[`{}`]", repln));
+            doc.md_links.insert(format!("`{}`", repln), value);
         }
     }
 }
 
 fn escape_kw(s: &mut String) {
     if ["type"].contains(&s.as_str()) {
-        *s = format!("r#{}", s);
+        *s = format!("{}_", s);
     }
-}
-
-fn to_uppercase(s: &str) -> String {
-    let mut chars = s.chars();
-    dbg!(format!("{}{}", chars.next().unwrap().to_uppercase(), chars.as_str()))
 }
