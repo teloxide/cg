@@ -25,6 +25,10 @@ impl Payload {
                     eq_hash_suitable(&method) => " Eq, Hash,",
                     _ => "",
                 };
+                let default_derive = when! {
+                    default_needed(&method) => " Default,",
+                    _ => "",
+                };
 
                 let return_ty = method.return_ty.to_string();
 
@@ -67,7 +71,7 @@ impl Payload {
 
 impl_payload! {{
 {method_doc}
-    #[derive(Debug, PartialEq,{eq_hash_derive} Clone, Serialize)]
+    #[derive(Debug, PartialEq,{eq_hash_derive}{default_derive} Clone, Serialize)]
     pub {Method} ({Method}Setters) => {return_ty} {{
 {required}{optional}
     }}
@@ -76,6 +80,7 @@ impl_payload! {{
                         uses = uses,
                         method_doc = method_doc,
                         eq_hash_derive = eq_hash_derive,
+                        default_derive = default_derive,
                         Method = method.names.1,
                         return_ty = return_ty,
                         required = required,
@@ -176,6 +181,13 @@ fn eq_hash_suitable(method: &crate::schema::Method) -> bool {
     }
 
     method.params.iter().all(|p| ty_eq_hash_suitable(&p.ty))
+}
+
+fn default_needed(method: &crate::schema::Method) -> bool {
+    method
+        .params
+        .iter()
+        .all(|p| matches!(p.ty, crate::schema::Type::Option(_)))
 }
 
 fn params(params: impl Iterator<Item = impl Borrow<crate::schema::Param>>) -> String {
