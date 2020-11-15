@@ -99,6 +99,7 @@ fn uses(method: &crate::schema::Method) -> String {
             crate::schema::Type::u8
             | crate::schema::Type::u16
             | crate::schema::Type::u32
+            | crate::schema::Type::i32
             | crate::schema::Type::u64
             | crate::schema::Type::i64
             | crate::schema::Type::f64
@@ -172,6 +173,7 @@ fn eq_hash_suitable(method: &crate::schema::Method) -> bool {
             | crate::schema::Type::u8
             | crate::schema::Type::u16
             | crate::schema::Type::u32
+            | crate::schema::Type::i32
             | crate::schema::Type::u64
             | crate::schema::Type::i64
             | crate::schema::Type::bool
@@ -222,6 +224,7 @@ fn convert_for(ty: &crate::schema::Type) -> &'static str {
         | crate::schema::Type::u8
         | crate::schema::Type::u16
         | crate::schema::Type::u32
+        | crate::schema::Type::i32
         | crate::schema::Type::u64
         | crate::schema::Type::i64
         | crate::schema::Type::f64
