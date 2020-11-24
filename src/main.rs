@@ -163,9 +163,19 @@ fn echo_requester(schema: schema::Schema) {
             })
             .join(",\n        ");
 
+        let generics = kiam::when! {
+            generics.is_empty() => String::from(""),
+            _ => format!("<{}>", generics),
+        };
+
+        let args = kiam::when! {
+            args.is_empty() => String::from(""),
+            _ => format!(", {}", args),
+        };
+
         let where_clause = kiam::when! {
             where_clause.is_empty() => String::from(""),
-            _ => format!("where {}", where_clause),
+            _ => format!(" where {}", where_clause),
         };
 
         println!(
@@ -173,7 +183,7 @@ fn echo_requester(schema: schema::Schema) {
     type {Method}: Request<Payload = {Method}, Err = Self::Err>;
 
     /// For telegram documentation see [`{Method}`]
-    fn {method} <{generics}> (&self, {args}) -> Self::{Method} {where_clause};
+    fn {method} {generics} (&self{args}) -> Self::{Method}{where_clause};
             ",
             Method = m.names.1,
             method = m.names.2,
@@ -270,9 +280,19 @@ fn echo_requester_fwd_macro(schema: schema::Schema) {
             })
             .join(",\n        ");
 
+        let generics = kiam::when! {
+            generics.is_empty() => String::from(""),
+            _ => format!("<{}>", generics),
+        };
+
+        let before_args = kiam::when! {
+            args.is_empty() => "",
+            _ => ", ",
+        };
+
         let where_clause = kiam::when! {
             where_clause.is_empty() => String::from(""),
-            _ => format!("where {}", where_clause),
+            _ => format!(" where {}", where_clause),
         };
 
         println!(
@@ -281,7 +301,7 @@ fn echo_requester_fwd_macro(schema: schema::Schema) {
     (@method {method} $body:ident $ty:ident) => {{
         type {Method} = $ty![{Method}];
 
-        fn {method}<{generics}>(&self, {args}) -> Self::{Method} {where_clause} {{
+        fn {method}{generics}(&self{before_args}{args}) -> Self::{Method}{where_clause} {{
             let this = self;
             $body!({method} this ({args}))
         }}
@@ -289,6 +309,7 @@ fn echo_requester_fwd_macro(schema: schema::Schema) {
     ",
             Method = m.names.1,
             method = m.names.2,
+            before_args = before_args,
             args = args,
             generics = generics,
             where_clause = where_clause
