@@ -233,7 +233,9 @@ pub(crate) fn convert_for(ty: &crate::schema::Type) -> Convert {
         crate::schema::Type::Option(inner) => convert_for(inner),
         crate::schema::Type::ArrayOf(ty) => Convert::Collect((**ty).clone()),
         crate::schema::Type::RawTy(s) => match s.as_str() {
-            raw @ "ChatId" | raw @ "TargetMessage" | raw @ "ReplyMarkup" => Convert::Into(crate::schema::Type::RawTy(raw.to_owned())),
+            raw @ "ChatId" | raw @ "TargetMessage" | raw @ "ReplyMarkup" => {
+                Convert::Into(crate::schema::Type::RawTy(raw.to_owned()))
+            }
             raw => Convert::Id(crate::schema::Type::RawTy(raw.to_owned())),
         },
     }
@@ -249,8 +251,8 @@ impl std::fmt::Display for Convert {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Convert::Id(_) => Ok(()),
-            Convert::Into(_) => f.write_str("[into]"),
-            Convert::Collect(_) => f.write_str("[collect]"),
+            Convert::Into(_) => f.write_str(" [into]"),
+            Convert::Collect(_) => f.write_str(" [collect]"),
         }
     }
 }
