@@ -180,7 +180,7 @@ fn echo_requester(schema: schema::Schema) {
             "
     type {Method}: Request<Payload = {Method}, Err = Self::Err>;
 
-    /// For telegram documentation see [`{Method}`]
+    /// For Telegram documentation see [`{Method}`].
     fn {method} {generics} (&self{args}) -> Self::{Method}{where_clause};
             ",
             Method = m.names.1,
