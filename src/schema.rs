@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use indexmap::IndexMap as HashMap;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]

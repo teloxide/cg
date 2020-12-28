@@ -218,23 +218,41 @@ fn params(params: impl Iterator<Item = impl Borrow<crate::schema::Param>>) -> St
         .join("\n")
 }
 
-fn convert_for(ty: &crate::schema::Type) -> &'static str {
+pub(crate) fn convert_for(ty: &crate::schema::Type) -> Convert {
     match ty {
-        crate::schema::Type::True
-        | crate::schema::Type::u8
-        | crate::schema::Type::u16
-        | crate::schema::Type::u32
-        | crate::schema::Type::i32
-        | crate::schema::Type::u64
-        | crate::schema::Type::i64
-        | crate::schema::Type::f64
-        | crate::schema::Type::bool => "",
-        crate::schema::Type::String => " [into]",
+        ty @ crate::schema::Type::True
+        | ty @ crate::schema::Type::u8
+        | ty @ crate::schema::Type::u16
+        | ty @ crate::schema::Type::u32
+        | ty @ crate::schema::Type::i32
+        | ty @ crate::schema::Type::u64
+        | ty @ crate::schema::Type::i64
+        | ty @ crate::schema::Type::f64
+        | ty @ crate::schema::Type::bool => Convert::Id(ty.clone()),
+        ty @ crate::schema::Type::String => Convert::Into(ty.clone()),
         crate::schema::Type::Option(inner) => convert_for(inner),
-        crate::schema::Type::ArrayOf(_) => " [collect]",
+        crate::schema::Type::ArrayOf(ty) => Convert::Collect((**ty).clone()),
         crate::schema::Type::RawTy(s) => match s.as_str() {
-            "ChatId" | "TargetMessage" | "ReplyMarkup" => " [into]",
-            _ => "",
+            raw @ "ChatId" | raw @ "TargetMessage" | raw @ "ReplyMarkup" => {
+                Convert::Into(crate::schema::Type::RawTy(raw.to_owned()))
+            }
+            raw => Convert::Id(crate::schema::Type::RawTy(raw.to_owned())),
         },
+    }
+}
+
+pub(crate) enum Convert {
+    Id(crate::schema::Type),
+    Into(crate::schema::Type),
+    Collect(crate::schema::Type),
+}
+
+impl std::fmt::Display for Convert {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Convert::Id(_) => Ok(()),
+            Convert::Into(_) => f.write_str(" [into]"),
+            Convert::Collect(_) => f.write_str(" [collect]"),
+        }
     }
 }

@@ -135,6 +135,20 @@ static DOC_PATCHES: &[(Target, Patch)] = &[
             with: "",
         },
     ),
+    (
+        Target::Method(Some("GetFile")),
+        Patch::Replace { 
+            text: "The file can then be downloaded via the link `https://api.telegram.org/file/bot<token>/<file_path>`, where `<file_path>` is taken from the response. It is guaranteed that the link will be valid for at least 1 hour. When the link expires, a new one can be requested by calling [`GetFile`] again.",
+            with: "The file can then be downloaded via the method [`Bot::download_file(file_path, dst)`], where `file_path` is taken from the response. It is guaranteed that the path from [`GetFile`] will be valid for at least 1 hour. When the path expires, a new one can be requested by calling [`GetFile`].",
+        },
+    ),
+    (
+        Target::Method(Some("GetFile")),
+        Patch::AddLink { 
+            name: "`Bot::download_file(file_path, dst)`",
+            value: "crate::net::Download::download_file",
+        },
+    ),
     // FIXME RETUNRS
 ];
 
