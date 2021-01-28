@@ -63,6 +63,11 @@ impl Payload {
                     _ => optional,
                 };
 
+                let multipart = when! {
+                    is_likely_multipart(&method) => String::from("    @[multipart]\n"),
+                    _ => String::new(),
+                };
+
                 Payload {
                     file_name,
                     content: format!(
@@ -70,13 +75,14 @@ impl Payload {
 {uses}
 
 impl_payload! {{
-{method_doc}
+{multipart}{method_doc}
     #[derive(Debug, PartialEq,{eq_hash_derive}{default_derive} Clone, Serialize)]
     pub {Method} ({Method}Setters) => {return_ty} {{
 {required}{optional}
     }}
 }}
 ",
+                        multipart = multipart,
                         uses = uses,
                         method_doc = method_doc,
                         eq_hash_derive = eq_hash_derive,
@@ -255,4 +261,11 @@ impl std::fmt::Display for Convert {
             Convert::Collect(_) => f.write_str(" [collect]"),
         }
     }
+}
+
+fn is_likely_multipart(m: &crate::schema::Method) -> bool {
+    m.params.iter().any(|p| {
+        matches!(&p.ty, crate::schema::Type::RawTy(x) if x == "InputFile" || x == "InputSticker")
+            || matches!(&p.ty, crate::schema::Type::Option(inner) if matches!(&**inner, crate::schema::Type::RawTy(x) if x == "InputFile" || x == "InputSticker"))
+    })
 }
