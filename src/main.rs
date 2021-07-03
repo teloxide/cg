@@ -1,7 +1,6 @@
 use itertools::Itertools;
 
 mod gen;
-mod git;
 mod patch;
 mod schema;
 
@@ -11,6 +10,7 @@ fn main() {
 
     let schema = schema::Schema::load(&schema_path);
     let schema = patch::patch_sc(schema);
+    let schema = patch::patch_ty(schema);
 
     let action = std::env::var("ACTION").expect("Expected `ACTION` variable set (action to do)");
 

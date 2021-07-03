@@ -99,9 +99,15 @@ impl_payload! {{
 }
 
 fn uses(method: &crate::schema::Method) -> String {
-    fn ty_use(ty: &crate::schema::Type) -> Option<String> {
+    enum Use {
+        Prelude,
+        Crate(String),
+        External(String),
+    }
+
+    fn ty_use(ty: &crate::schema::Type) -> Use {
         match ty {
-            crate::schema::Type::True => Some(String::from("use crate::types::True;\n")),
+            crate::schema::Type::True => Use::Crate(String::from("use crate::types::True;")),
             crate::schema::Type::u8
             | crate::schema::Type::u16
             | crate::schema::Type::u32
@@ -110,27 +116,48 @@ fn uses(method: &crate::schema::Method) -> String {
             | crate::schema::Type::i64
             | crate::schema::Type::f64
             | crate::schema::Type::bool
-            | crate::schema::Type::String => None,
+            | crate::schema::Type::String => Use::Prelude,
             crate::schema::Type::Option(inner) | crate::schema::Type::ArrayOf(inner) => {
                 ty_use(inner)
             }
-            crate::schema::Type::RawTy(raw) => Some(["use crate::types::", &raw, ";\n"].concat()),
+            crate::schema::Type::RawTy(raw) => {
+                Use::Crate(["use crate::types::", &raw, ";"].concat())
+            }
+            crate::schema::Type::Url => Use::External(String::from("use url::Url;")),
+            crate::schema::Type::DateTime => {
+                Use::External(String::from("use chrono::{DateTime, Utc};"))
+            }
         }
     }
 
-    let uses = core::iter::once(&method.return_ty)
+    let mut crate_uses = HashSet::new();
+    let mut external_uses = HashSet::new();
+
+    external_uses.insert(String::from("use serde::Serialize;"));
+
+    core::iter::once(&method.return_ty)
         .chain(method.params.iter().map(|p| &p.ty))
-        .flat_map(ty_use)
-        .collect::<HashSet<_>>();
+        .map(ty_use)
+        .for_each(|u| match u {
+            Use::Prelude => {}
+            Use::Crate(u) => {
+                crate_uses.insert(u);
+            }
+            Use::External(u) => {
+                external_uses.insert(u);
+            }
+        });
+
+    let external_uses = external_uses.into_iter().join("\n");
 
     when! {
-        uses.is_empty() => String::from("use serde::Serialize;"),
+        crate_uses.is_empty() => external_uses,
         _ => {
-            let uses = uses
+            let crate_uses = crate_uses
                 .into_iter()
                 .join("");
 
-            format!("use serde::Serialize;\n\n{uses}", uses = uses)
+            format!("{external}\n\n{crate_}", external = external_uses, crate_ = crate_uses)
         }
     }
 }
@@ -184,6 +211,9 @@ fn eq_hash_suitable(method: &crate::schema::Method) -> bool {
             | crate::schema::Type::i64
             | crate::schema::Type::bool
             | crate::schema::Type::String => true,
+
+            crate::schema::Type::Url | crate::schema::Type::DateTime => true,
+
             crate::schema::Type::RawTy(raw) => raw != "MaskPosition" && raw != "InlineQueryResult",
         }
     }
@@ -210,12 +240,19 @@ fn params(params: impl Iterator<Item = impl Borrow<crate::schema::Param>>) -> St
                     "\n            #[serde(flatten)]"
                 }
                 _ => "",
+            };            
+            let with = match ty {
+                crate::schema::Type::DateTime => {
+                    "\n            #[serde(with = \"crate::types::serde_opt_date_from_unix_timestamp\")]"
+                }
+                _ => "",
             };
             let convert = convert_for(ty);
             format!(
-                "        {doc}{flatten}\n            pub {field}: {ty}{convert},",
+                "        {doc}{flatten}{with}\n            pub {field}: {ty}{convert},",
                 doc = doc,
                 flatten = flatten,
+                with = with,
                 field = field,
                 ty = ty,
                 convert = convert
@@ -244,6 +281,8 @@ pub(crate) fn convert_for(ty: &crate::schema::Type) -> Convert {
             }
             raw => Convert::Id(crate::schema::Type::RawTy(raw.to_owned())),
         },
+        ty @ crate::schema::Type::Url => Convert::Id(ty.clone()),
+        ty @ crate::schema::Type::DateTime => Convert::Into(ty.clone()),
     }
 }
 

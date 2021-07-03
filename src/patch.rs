@@ -1,4 +1,7 @@
-use crate::{schema::Schema, to_uppercase};
+use crate::{
+    schema::{Schema, Type},
+    to_uppercase,
+};
 
 pub fn patch_sc(mut schema: Schema) -> Schema {
     fn check(l: &Option<&str>, r: &str) -> bool {
@@ -137,14 +140,14 @@ static DOC_PATCHES: &[(Target, Patch)] = &[
     ),
     (
         Target::Method(Some("GetFile")),
-        Patch::Replace { 
+        Patch::Replace {
             text: "The file can then be downloaded via the link `https://api.telegram.org/file/bot<token>/<file_path>`, where `<file_path>` is taken from the response. It is guaranteed that the link will be valid for at least 1 hour. When the link expires, a new one can be requested by calling [`GetFile`] again.",
             with: "The file can then be downloaded via the method [`Bot::download_file(file_path, dst)`], where `file_path` is taken from the response. It is guaranteed that the path from [`GetFile`] will be valid for at least 1 hour. When the path expires, a new one can be requested by calling [`GetFile`].",
         },
     ),
     (
         Target::Method(Some("GetFile")),
-        Patch::AddLink { 
+        Patch::AddLink {
             name: "`Bot::download_file(file_path, dst)`",
             value: "crate::net::Download::download_file",
         },
@@ -264,5 +267,68 @@ fn intra_links(doc: &mut crate::schema::Doc) {
 fn escape_kw(s: &mut String) {
     if ["type"].contains(&s.as_str()) {
         *s = format!("{}_", s);
+    }
+}
+
+pub(crate) fn patch_ty(mut schema: Schema) -> Schema {
+    // URLs
+    patch_types(
+        &mut schema,
+        Type::String,
+        Type::Url,
+        &[("set_webhook", "url")],
+    );
+
+    patch_types(
+        &mut schema,
+        Type::Option(Box::new(Type::String)),
+        Type::Option(Box::new(Type::Url)),
+        &[
+            ("answer_callback_query", "url"),
+            ("send_invoice", "photo_url"),
+        ],
+    );
+
+    // Dates
+    patch_types(
+        &mut schema,
+        Type::Option(Box::new(Type::u64)),
+        Type::Option(Box::new(Type::DateTime)),
+        &[
+            ("send_poll", "close_date"),
+            ("kick_chat_member", "until_date"),
+            ("restrict_chat_member", "until_date"),
+        ],
+    );
+    patch_types(
+        &mut schema,
+        Type::Option(Box::new(Type::i64)),
+        Type::Option(Box::new(Type::DateTime)),
+        &[
+            ("create_chat_invite_link", "expire_date"),
+            ("edit_chat_invite_link", "expire_date"),
+        ],
+    );
+
+    schema
+}
+
+fn patch_types(schema: &mut Schema, from: Type, to: Type, list: &[(&str, &str)]) {
+    // URLs
+    for &(method, param) in list {
+        let m = schema
+            .methods
+            .iter_mut()
+            .find(|m| m.names.2 == method)
+            .expect("Couldn't find method for pathcing");
+
+        let p = m
+            .params
+            .iter_mut()
+            .find(|p| p.name == param)
+            .expect("Couldn't find parameter for pathcing");
+
+        assert_eq!(p.ty, from, "{}::{}", method, param);
+        p.ty = to.clone();
     }
 }

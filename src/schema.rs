@@ -47,7 +47,7 @@ pub struct Param {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 pub enum Type {
     True,
@@ -63,6 +63,9 @@ pub enum Type {
     Option(Box<Type>),
     ArrayOf(Box<Type>),
     RawTy(String),
+
+    Url,
+    DateTime,
 }
 
 impl Schema {
@@ -92,6 +95,8 @@ impl std::fmt::Display for Type {
             Type::Option(inner) => write!(f, "Option<{}>", inner),
             Type::ArrayOf(inner) => write!(f, "Vec<{}>", inner),
             Type::RawTy(raw) => f.write_str(raw),
+            Type::Url => write!(f, "Url"),
+            Type::DateTime => write!(f, "DateTime<Utc>"),
         }
     }
 }
