@@ -296,6 +296,7 @@ pub(crate) fn patch_ty(mut schema: Schema) -> Schema {
         Type::Option(Box::new(Type::DateTime)),
         &[
             ("send_poll", "close_date"),
+            ("ban_chat_member", "until_date"),
             ("kick_chat_member", "until_date"),
             ("restrict_chat_member", "until_date"),
         ],
