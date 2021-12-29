@@ -82,8 +82,6 @@ fn echo_payloads_modrs_and_settersrs_content(schema: schema::Schema) {
 }
 
 fn echo_requester(schema: schema::Schema) {
-    let schema = add_extra(schema);
-
     println!("{}", header("block"));
     schema.methods.iter().for_each(|m| {
         let mut convert_params = m
@@ -191,7 +189,6 @@ fn echo_requester(schema: schema::Schema) {
 }
 
 fn echo_requester_fwd_macro(schema: schema::Schema) {
-    let schema = add_extra(schema);
     println!("{}", header("macro"));
     println!(
         "macro_rules! requester_forward {{
@@ -325,28 +322,6 @@ fn min_prefix<'a>(l: &'a str, r: &str) -> Option<&'a str> {
         .zip(r.char_indices())
         .find(|((_, l), (_, r))| l != r)
         .map(|((i, _), (_, _))| &l[..=i])
-}
-
-fn add_extra(mut schema: schema::Schema) -> schema::Schema {
-    schema.methods.push(schema::Method {
-        names: (
-            "getUpdatesFaultTolerant".to_owned(),
-            "GetUpdatesFaultTolerant".to_owned(),
-            "get_updates_fault_tolerant".to_owned(),
-        ),
-        return_ty: schema::Type::RawTy("NonStrictVec<Update>".to_owned()),
-        doc: schema::Doc {
-            md: "".to_owned(),
-            md_links: <_>::default(),
-        },
-        tg_doc: "".to_owned(),
-        tg_category: "".to_owned(),
-        notes: <_>::default(),
-        params: vec![],
-        sibling: None,
-    });
-
-    schema
 }
 
 fn header(thing: &str) -> String {
