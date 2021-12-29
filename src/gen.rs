@@ -68,6 +68,16 @@ impl Payload {
                     _ => String::new(),
                 };
 
+                let derive = if !multipart.is_empty() || ["SendMediaGroup", "EditMessageMedia", "EditMessageMediaInline"].contains(&&*method.names.1) {
+                    format!("#[derive(Debug, Clone, Serialize)]")
+                } else {
+                    format!(
+                        "#[derive(Debug, PartialEq,{eq_hash_derive}{default_derive} Clone, Serialize)]",
+                        eq_hash_derive = eq_hash_derive,
+                        default_derive = default_derive
+                    )
+                };
+
                 Payload {
                     file_name,
                     content: format!(
@@ -76,7 +86,7 @@ impl Payload {
 
 impl_payload! {{
 {multipart}{method_doc}
-    #[derive(Debug, PartialEq,{eq_hash_derive}{default_derive} Clone, Serialize)]
+    {derive}
     pub {Method} ({Method}Setters) => {return_ty} {{
 {required}{optional}
     }}
@@ -85,8 +95,7 @@ impl_payload! {{
                         multipart = multipart,
                         uses = uses,
                         method_doc = method_doc,
-                        eq_hash_derive = eq_hash_derive,
-                        default_derive = default_derive,
+                        derive = derive,
                         Method = method.names.1,
                         return_ty = return_ty,
                         required = required,
@@ -240,7 +249,7 @@ fn params(params: impl Iterator<Item = impl Borrow<crate::schema::Param>>) -> St
                     "\n            #[serde(flatten)]"
                 }
                 _ => "",
-            };            
+            };
             let with = match ty {
                 crate::schema::Type::DateTime => {
                     "\n            #[serde(with = \"crate::types::serde_opt_date_from_unix_timestamp\")]"

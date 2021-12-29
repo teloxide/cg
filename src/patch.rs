@@ -128,6 +128,16 @@ static DOC_PATCHES: &[(Target, Patch)] = &[
         },
     ),
     (
+        Target::Field {
+            method_name: Some("sendChatAction"),
+            field_name: Some("action"),
+        },
+        Patch::ReplaceLink {
+            name: "stickers",
+            value: "crate::payloads::SendSticker",
+        },
+    ),
+    (
         Target::Any { method_name: None },
         Patch::Custom(intra_links),
     ),
