@@ -63,9 +63,17 @@ impl Payload {
                     _ => optional,
                 };
 
-                let multipart = when! {
-                    is_likely_multipart(&method) => String::from("    @[multipart]\n"),
-                    _ => String::new(),
+
+                let multipart = multipart_input_file_fields(&method).map(|field| format!("    @[multipart = {}]\n", field.join(", "))).unwrap_or(String::new());
+
+                let derive = if !multipart.is_empty() || ["SendMediaGroup", "EditMessageMedia", "EditMessageMediaInline"].contains(&&*method.names.1) {
+                    format!("#[derive(Debug, Clone, Serialize)]")
+                } else {
+                    format!(
+                        "#[derive(Debug, PartialEq,{eq_hash_derive}{default_derive} Clone, Serialize)]",
+                        eq_hash_derive = eq_hash_derive,
+                        default_derive = default_derive
+                    )
                 };
 
                 Payload {
@@ -76,7 +84,7 @@ impl Payload {
 
 impl_payload! {{
 {multipart}{method_doc}
-    #[derive(Debug, PartialEq,{eq_hash_derive}{default_derive} Clone, Serialize)]
+    {derive}
     pub {Method} ({Method}Setters) => {return_ty} {{
 {required}{optional}
     }}
@@ -85,8 +93,7 @@ impl_payload! {{
                         multipart = multipart,
                         uses = uses,
                         method_doc = method_doc,
-                        eq_hash_derive = eq_hash_derive,
-                        default_derive = default_derive,
+                        derive = derive,
                         Method = method.names.1,
                         return_ty = return_ty,
                         required = required,
@@ -240,7 +247,7 @@ fn params(params: impl Iterator<Item = impl Borrow<crate::schema::Param>>) -> St
                     "\n            #[serde(flatten)]"
                 }
                 _ => "",
-            };            
+            };
             let with = match ty {
                 crate::schema::Type::DateTime => {
                     "\n            #[serde(with = \"crate::types::serde_opt_date_from_unix_timestamp\")]"
@@ -302,9 +309,22 @@ impl std::fmt::Display for Convert {
     }
 }
 
-fn is_likely_multipart(m: &crate::schema::Method) -> bool {
-    m.params.iter().any(|p| {
-        matches!(&p.ty, crate::schema::Type::RawTy(x) if x == "InputFile" || x == "InputSticker")
-            || matches!(&p.ty, crate::schema::Type::Option(inner) if matches!(&**inner, crate::schema::Type::RawTy(x) if x == "InputFile" || x == "InputSticker"))
-    })
+fn multipart_input_file_fields(m: &crate::schema::Method) -> Option<Vec<&str>> {
+    let fields: Vec<_> = m
+        .params
+        .iter()
+        .filter(|&p| ty_is_multiparty(&p.ty))
+        .map(|p| &*p.name)
+        .collect();
+
+    if fields.is_empty() {
+        None
+    } else {
+        Some(fields)
+    }
+}
+
+fn ty_is_multiparty(ty: &crate::schema::Type) -> bool {
+    matches!(ty, crate::schema::Type::RawTy(x) if x == "InputFile" || x == "InputSticker")
+        || matches!(ty, crate::schema::Type::Option(inner) if ty_is_multiparty(inner))
 }
