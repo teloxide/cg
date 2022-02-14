@@ -76,6 +76,11 @@ impl Payload {
                     )
                 };
 
+                let timeout_secs = when! {
+                    method.names.2 == "get_updates" => "    @[timeout_secs = timeout]\n",
+                    _ => ""
+                };
+
                 Payload {
                     file_name,
                     content: format!(
@@ -83,7 +88,7 @@ impl Payload {
 {uses}
 
 impl_payload! {{
-{multipart}{method_doc}
+{multipart}{timeout_secs}{method_doc}
     {derive}
     pub {Method} ({Method}Setters) => {return_ty} {{
 {required}{optional}
@@ -91,6 +96,7 @@ impl_payload! {{
 }}
 ",
                         multipart = multipart,
+                        timeout_secs = timeout_secs,
                         uses = uses,
                         method_doc = method_doc,
                         derive = derive,
