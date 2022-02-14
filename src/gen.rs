@@ -63,10 +63,8 @@ impl Payload {
                     _ => optional,
                 };
 
-                let multipart = when! {
-                    is_likely_multipart(&method) => String::from("    @[multipart]\n"),
-                    _ => String::new(),
-                };
+
+                let multipart = multipart_input_file_fields(&method).map(|field| format!("    @[multipart = {}]\n", field.join(", "))).unwrap_or(String::new());
 
                 let derive = if !multipart.is_empty() || ["SendMediaGroup", "EditMessageMedia", "EditMessageMediaInline"].contains(&&*method.names.1) {
                     format!("#[derive(Debug, Clone, Serialize)]")
@@ -311,9 +309,22 @@ impl std::fmt::Display for Convert {
     }
 }
 
-fn is_likely_multipart(m: &crate::schema::Method) -> bool {
-    m.params.iter().any(|p| {
-        matches!(&p.ty, crate::schema::Type::RawTy(x) if x == "InputFile" || x == "InputSticker")
-            || matches!(&p.ty, crate::schema::Type::Option(inner) if matches!(&**inner, crate::schema::Type::RawTy(x) if x == "InputFile" || x == "InputSticker"))
-    })
+fn multipart_input_file_fields(m: &crate::schema::Method) -> Option<Vec<&str>> {
+    let fields: Vec<_> = m
+        .params
+        .iter()
+        .filter(|&p| ty_is_multiparty(&p.ty))
+        .map(|p| &*p.name)
+        .collect();
+
+    if fields.is_empty() {
+        None
+    } else {
+        Some(fields)
+    }
+}
+
+fn ty_is_multiparty(ty: &crate::schema::Type) -> bool {
+    matches!(ty, crate::schema::Type::RawTy(x) if x == "InputFile" || x == "InputSticker")
+        || matches!(ty, crate::schema::Type::Option(inner) if ty_is_multiparty(inner))
 }
