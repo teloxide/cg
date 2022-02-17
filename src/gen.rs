@@ -250,7 +250,7 @@ fn params(params: impl Iterator<Item = impl Borrow<crate::schema::Param>>) -> St
             let rename = if field.ends_with("_") {
                 format!("\n            #[serde(rename = \"{}\")]", &field[..field.len() - 1])
             } else {
-                "".to_string()
+                "".to_owned()
             };
             let convert = convert_for(ty);
             format!(
